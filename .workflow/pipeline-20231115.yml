@@ -27,6 +27,8 @@ stages:
           - ''
           - cd ./dist
           - ''
+          - ls
+          - ''
           - npm version patch
           - ''
           - npm publish
