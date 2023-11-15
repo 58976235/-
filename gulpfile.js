@@ -33,9 +33,20 @@ const watchHandler = function () {
   gulp.watch('./src/code/*.js', jsHandler)
 }
 
-
-exports.default = gulp.series(
-  delHandler,
-  gulp.parallel(jsHandler,otherHandler),
-  watchHandler
-)
+function build() {  
+  let len = process.argv.length
+  if(!process.argv && len <= 0) return
+  if(process.argv[len-1] == 'pro'){
+    return gulp.series(
+      delHandler,
+      gulp.parallel(jsHandler,otherHandler)
+    )
+  } else {
+    return gulp.series(
+      delHandler,
+      gulp.parallel(jsHandler,otherHandler),
+      watchHandler
+    )
+  }
+}
+exports.default = build()
