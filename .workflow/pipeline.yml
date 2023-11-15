@@ -27,7 +27,9 @@ stages:
           - ''
           - cd ./dist
           - ''
-          - npm version batch
+          - ls
+          - ''
+          - 'npm version patch '
           - ''
           - npm publish
         artifacts:
