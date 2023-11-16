@@ -30,10 +30,6 @@ stages:
           - ''
           - cd ./dist
           - ''
-          - ls
-          - ''
-          - 'npm version patch '
-          - ''
           - npm publish
         artifacts:
           - name: BUILD_ARTIFACT
