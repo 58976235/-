@@ -3,6 +3,10 @@ name: pipeline
 displayName: pipeline
 triggers:
   trigger: auto
+  push:
+    branches:
+      prefix:
+        - ''
 variables:
   global:
     - ak
