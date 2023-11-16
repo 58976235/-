@@ -3,10 +3,6 @@ name: pipeline
 displayName: pipeline
 triggers:
   trigger: auto
-  push:
-    branches:
-      precise:
-        - master
 variables:
   global:
     - ak
