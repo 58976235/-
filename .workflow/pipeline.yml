@@ -7,6 +7,9 @@ triggers:
     branches:
       precise:
         - master
+variables:
+  global:
+    - ak
 stages:
   - name: stage-efb54805
     displayName: 打包发布
