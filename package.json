@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "gulp --env env",
-    "build": "gulp --env pro"
+    "build": "gulp --env pro",
+    "test": "gulp --env pro && cd ./dist && npm run test"
   },
   "keywords": [],
   "author": "",

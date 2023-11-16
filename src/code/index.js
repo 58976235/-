@@ -1,158 +1,248 @@
-/**
- * @function: 阿拉伯金额转中文大写
- * @param {number} money
- * @return {string}
- * @example 
- *  //return '伍仟零伍万贰仟贰佰伍拾陆圆贰角壹分'
- *  lowerToupper(50052256.21)
- */
-export function lowerToupper(money) {
-  //汉字的数字
-  let cnNums = ["零", "壹", "贰", "叁", "肆", "伍", "陆", "柒", "捌", "玖"]
-  //基本单位
-  let cnIntRadice = ["", "拾", "佰", "仟"]
-  //对应整数部分扩展单位
-  let cnIntUnits = ["圆", "万", "亿", "兆"]
-  //对应小数部分单位
-  let cnDecUnits = ["角", "分", "毫", "厘"]
 
-  const { integerArr, decimalArr } = moneySplit(money)
-  // 超出范围则返回传入数据
-  if (integerArr.length > 4 || decimalArr.length > 4) {
-    return '超出范围'
+function num2strHandler(num, defaultParams, isMoney) {
+  let str = num.toString()
+  let strArr = str.split('.')
+  let integerArr = strArr[0].split('').reverse()
+  let decimalArr = (strArr[1] || '').split('')
+
+  let integerArray = []
+  let arr = []
+  integerArr.forEach(item => {
+    if ((arr[arr.length - 1] == 0 || arr[arr.length - 1] == '&!$%#&') && item == 0) {
+      arr.push('&!$%#&')
+    } else {
+      arr.push(item)
+    }
+    if (arr.length == 4) {
+      integerArray.push(arr)
+      arr = []
+    }
+  })
+  if (arr.length) {
+    integerArray.push(arr)
   }
   let resArr = []
-  // 整数部分处理
-  integerArr.forEach((item, index) => {
-    // 暂存区
-    let _arr = []
-    // 子数组倒叙遍历,先确定个位
-    item.reverse().forEach((value, unit) => {
-      // 拿到当前值的位数
-      let unitStr = cnIntRadice[unit]
-      // 如果当前是0 ,则单位不要
-      if (value == 0) {
-        let first = _arr[0] || ''
-        // 判断暂存区第一项是否为0, 或者 第一个数据则直接跳过循环
-        if (first == '零' || value == unit) {
-          return
-        }
+  integerArray.forEach((item, index) => {
+    let strArr = []
+    item.forEach((child, childIndex) => {
+      let _num = Math.pow(10, childIndex)
+      let numStr = defaultParams.nums[child] || ''
+      let unitStr = defaultParams.units[_num] || ''
+      if (numStr == '' || numStr == defaultParams.nums[0]) {
         unitStr = ''
       }
-      // 将当前值插入暂存区
-      _arr.unshift(cnNums[value] + unitStr)
+      strArr.unshift(numStr + unitStr)
     })
-    // 为暂存区添加单位
-    _arr.push(cnIntUnits[index])
-    // 将暂存区添加到结果
-    resArr.unshift(..._arr)
+    let _num = Math.pow(10, index * 4)
+    let unitStr = defaultParams.units[_num] || ''
+    if (strArr[strArr.length - 1] == defaultParams.nums[0]) {
+      strArr[strArr.length - 1] = ''
+    }
+    let hasNum = strArr.some(item => item != '')
+    if (hasNum) {
+      strArr.push(unitStr)
+    }
+    resArr.unshift(...strArr)
   })
-  let decimalStrArr = []
-  // 小数部分处理
+  let decimalResArr = []
   decimalArr.forEach((item, index) => {
-    decimalStrArr.push(cnNums[item] + cnDecUnits[index])
+    let _num = defaultParams.nums[item]
+    if (isMoney) {
+      let _n = 1 / Math.pow(10, index + 1)
+      let moneyUnitStr = defaultParams.moneyUnits[_n]
+      decimalResArr.push(_num + moneyUnitStr)
+    } else {
+      decimalResArr.push(_num)
+    }
   })
-  let _decimal = decimalStrArr.join('')
-  let decimal = _decimal == '' ? '整' : _decimal
-  let res = resArr.join('') + decimal
-  return res
+  if (isMoney) {
+    resArr.push(defaultParams.moneyUnits[1])
+    if (decimalArr.length == 0) {
+      resArr.push(defaultParams.decUnit['/'])
+    }
+  } else {
+    if (decimalArr.length > 0) {
+      decimalResArr.unshift(defaultParams.decUnit['.'])
+    }
+  }
+  let integerStr = resArr.join('')
+  let decimalStr = decimalResArr.join('')
+  return integerStr + decimalStr
+}
 
-  function moneySplit(money) {
-    // 转文本类型
-    let moneyStr = money.toString();
-    // 通过小数点分割
-    let moneyArr = moneyStr.split('.')
-    // 整数部分
-    let integerNum = moneyArr[0] || ''
-    // 小数部分
-    let decimalNum = moneyArr[1] || ''
-    // 整数部分倒叙
-    let integerArr = integerNum.split('').reverse()
-    let decimalArr = decimalNum.split('')
+function str2NumHandler(str, defaultParams, isMoney) {
+  try {
+    let myParams = {}
+    Object.keys(defaultParams).forEach(childKey => {
+      let obj = {}
+      Object.keys(defaultParams[childKey]).forEach(key => {
+        obj[defaultParams[childKey][key]] = key
+      })
+      myParams[childKey] = obj
+    })
+    if (isMoney) {
+      Object.keys(defaultParams.moneyUnits).forEach(key => {
+        if (key == 1) {
+          str = str.replace(defaultParams.moneyUnits[key], '.')
+        } else {
+          str = str.replace(defaultParams.moneyUnits[key], '')
+        }
+      })
+    } else {
+      str = str.replace(defaultParams.decUnit['.'], '.')
+    }
 
-    let resArr = []
-    let arr = []
-    // 4个一组进行分组 对应单位 ["圆", "万", "亿", "兆"]
-    integerArr.forEach(item => {
-      arr.unshift(item)
-      if (arr.length == 4) {
-        resArr.unshift(arr)
-        arr = []
+
+    let strArr = str.split('.')
+    let integerArr = strArr[0].split('')
+    let decimalArr = (strArr[1] || '').split('')
+    let res = '0'
+    let numArr = []
+    integerArr.forEach(key => {
+      let isSplit = false
+      let str = myParams.nums[key] || ''
+      let unit = myParams.units[key] || 0
+      if (str != '') {
+        numArr.push(str)
+      }
+      if (unit > 0) {
+        for (let i = 1; i < 4; i++) {
+          if (Math.pow(10000, i) == unit) {
+            isSplit = true
+          }
+        }
+        if (!isSplit) {
+          numArr[numArr.length - 1] = numArr[numArr.length - 1] * unit
+        }
+      }
+      if (isSplit) {
+        let _res = numArr.reduce((a, b) => a * 1 + b * 1)
+        _res = _res * unit
+        res = parseFloat(res) + _res
+        isSplit = false
+        numArr = []
       }
     })
-    if (arr.length) {
-      resArr.unshift(arr)
+
+    let _res = numArr.reduce((a, b) => a * 1 + b * 1)
+    res = parseFloat(res) + _res
+    let decResArr = []
+    decimalArr.forEach(key => {
+      decResArr.push(myParams.nums[key])
+    })
+    let integer = res
+    let decimal = decResArr.join('')
+    let resNum = integer
+    if (decResArr.length) {
+      resNum = integer + "." + decimal
     }
-    return {
-      integerArr: resArr.reverse(), // 倒叙 先确定个位
-      decimalArr
-    }
+    return parseFloat(resNum)
+  } catch (error) {
+    throw('请检查传入的中文是否和设置的参数匹配')
   }
 }
-/**
- * @function: 中文大写金额转阿拉伯金额
- * @param {string} money
- * @return {number}
- * @example 
- *  //return 50052256.21
- *  upperTolower('伍仟零伍万贰仟贰佰伍拾陆圆贰角壹分')
- */
-export function upperTolower(money) {
-  const nums = {
-    '零': 0,
-    '壹': 1,
-    '贰': 2,
-    '叁': 3,
-    '肆': 4,
-    '伍': 5,
-    '陆': 6,
-    '柒': 7,
-    '捌': 8,
-    '玖': 9,
-  }
-  const radice = {
-    '圆': 1,
-    '拾': 10,
-    '佰': 100,
-    '仟': 1000,
-    '万': 10000,
-    '亿': 100000000,
-    '兆': 10000000000000
-  }
-  const decUnits = {
-    "角": 1,
-    "分": 1,
-    "毫": 1,
-    "厘": 1
-  }
-  // 切割为字符串
-  let list = money.split('')
-  let res = '0'
-  // 暂存值
-  let pre = 0
-  // 是否为字符串拼接
-  let strAdd = false
-  list.forEach(item => {
-    let num = nums[item] || 'false'
-    let radiceNum = radice[item] || 'false'
-    if (num != 'false' && radiceNum == 'false') {
-      // 暂存
-      pre = num
-    } else if (radiceNum != 'false') {
-      if (strAdd) {
-        let _num = res / 10
-        res = _num.toString() + (pre * radiceNum).toString()
-        strAdd = false
-      } else {
-        res = parseFloat(res) + (pre * radiceNum)
-      }
-    } else {
-      if (item == '零') {
-        strAdd = true
-      } else if (decUnits[item] == 1) {
-        res += item == '角' ? '.' + pre : pre.toString()
-      }
+
+class Num2Str {
+  defaultParams = {
+    nums: {
+      0: "零", 1: "壹", 2: "贰", 3: "叁", 4: "肆", 5: "伍", 6: "陆", 7: "柒", 8: "捌", 9: "玖"
+    },
+    units: {
+      10: "拾", 100: "佰", 1000: "仟", 10000: "万", 100000000: "亿", 1000000000000: "兆"
+    },
+    decUnit: {
+      '.': "点", '/': '整'
+    },
+    moneyUnits: {
+      1: "圆", 0.1: "角", 0.01: "分", 0.001: "毫", 0.0001: "厘"
     }
-  })
-  return parseFloat(res)
+  }
+  constructor() { }
+  setNums(nums) {
+    if (typeof nums != "object" || Array.isArray(nums)) {
+      throw ("请传入对象形式的参数")
+      return
+    }
+    if (Object.keys(nums).length < 10) {
+      throw ("传入参数不完整")
+      return
+    }
+    let check = Object.keys(nums).every(item => {
+      return Number(item).toString() != 'NaN' && Number(item) >= 0 && Number(item) < 10
+    })
+    if (!check) {
+      throw ("传入参数不正确")
+      return
+    }
+    this.defaultParams.nums = nums
+  }
+  setUnit(units) {
+    if (typeof units != "object" || Array.isArray(units)) {
+      throw ("请传入对象形式的参数")
+      return
+    }
+    if (Object.keys(units).length < 6) {
+      throw ("传入参数不完整")
+      return
+    }
+    let unit = units['10'] || units['100'] || units['1000'] || units['10000'] || units['100000000'] || units['1000000000000']
+    if (!unit) {
+      throw ("传入参数不正确")
+      return
+    }
+    this.defaultParams.units = units
+  }
+  setDecUnit(decUnit) {
+    if (typeof decUnit != "object" || Array.isArray(decUnit)) {
+      throw ("请传入对象形式的参数")
+      return
+    }
+    if (Object.keys(decUnit).length < 2) {
+      throw ("传入参数不完整")
+      return
+    }
+    let dec = decUnit['.'] || decUnit['/']
+    if (!dec) {
+      throw ("传入参数不正确")
+      return
+    }
+    this.defaultParams.decUnit = decUnit
+  }
+  setMoneyUnits(moneyUnits) {
+    if (typeof moneyUnits != "object" || Array.isArray(moneyUnits)) {
+      throw ("请传入对象形式的参数")
+      return
+    }
+    if (Object.keys(moneyUnits).length < 5) {
+      throw ("传入参数不完整")
+      return
+    }
+    let check = Object.keys(moneyUnits).every(item => {
+      return parseFloat(item).toString() != 'NaN' && parseFloat(item) > 0 && parseFloat(item) <= 1
+    })
+    if (!check) {
+      throw ("传入参数不正确")
+      return
+    }
+    this.defaultParams.moneyUnits = moneyUnits
+  }
+  getDefaultParams() {
+    return this.defaultParams
+  }
+  numToStr(num) {
+    return num2strHandler(num, this.defaultParams, false)
+  }
+  numToStrMoney(num) {
+    return num2strHandler(num, this.defaultParams, true)
+  }
+  strToNum(str) {
+    return str2NumHandler(str, this.defaultParams, false)
+  }
+  strToNumMoney(str) {
+    return str2NumHandler(str, this.defaultParams, true)
+  }
 }
+
+let num2str = new Num2Str()
+
+export default num2str
