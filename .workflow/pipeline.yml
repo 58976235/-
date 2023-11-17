@@ -5,8 +5,8 @@ triggers:
   trigger: auto
   push:
     branches:
-      precise:
-        - master
+      prefix:
+        - ''
 variables:
   global:
     - ak
