@@ -1,75 +1,93 @@
 
+/**
+ * @function: 数字转中文
+ * @param {*} num 数字
+ * @param {*} defaultParams 转换字符
+ * @param {*} isMoney 是否是金额
+ * @return {string} 
+ */
 function num2strHandler(num, defaultParams, isMoney) {
-  let str = num.toString()
-  let strArr = str.split('.')
-  let integerArr = strArr[0].split('').reverse()
-  let decimalArr = (strArr[1] || '').split('')
+  try {
+    let str = num.toString()
+    let strArr = str.split('.')
+    let integerArr = strArr[0].split('').reverse()
+    let decimalArr = (strArr[1] || '').split('')
 
-  let integerArray = []
-  let arr = []
-  integerArr.forEach(item => {
-    if ((arr[arr.length - 1] == 0 || arr[arr.length - 1] == '&!$%#&') && item == 0) {
-      arr.push('&!$%#&')
-    } else {
-      arr.push(item)
-    }
-    if (arr.length == 4) {
-      integerArray.push(arr)
-      arr = []
-    }
-  })
-  if (arr.length) {
-    integerArray.push(arr)
-  }
-  let resArr = []
-  integerArray.forEach((item, index) => {
-    let strArr = []
-    item.forEach((child, childIndex) => {
-      let _num = Math.pow(10, childIndex)
-      let numStr = defaultParams.nums[child] || ''
-      let unitStr = defaultParams.units[_num] || ''
-      if (numStr == '' || numStr == defaultParams.nums[0]) {
-        unitStr = ''
+    let integerArray = []
+    let arr = []
+    integerArr.forEach(item => {
+      if ((arr[arr.length - 1] == 0 || arr[arr.length - 1] == '&!$%#&') && item == 0) {
+        arr.push('&!$%#&')
+      } else {
+        arr.push(item)
       }
-      strArr.unshift(numStr + unitStr)
+      if (arr.length == 4) {
+        integerArray.push(arr)
+        arr = []
+      }
     })
-    let _num = Math.pow(10, index * 4)
-    let unitStr = defaultParams.units[_num] || ''
-    if (strArr[strArr.length - 1] == defaultParams.nums[0]) {
-      strArr[strArr.length - 1] = ''
+    if (arr.length) {
+      integerArray.push(arr)
     }
-    let hasNum = strArr.some(item => item != '')
-    if (hasNum) {
-      strArr.push(unitStr)
-    }
-    resArr.unshift(...strArr)
-  })
-  let decimalResArr = []
-  decimalArr.forEach((item, index) => {
-    let _num = defaultParams.nums[item]
+    let resArr = []
+    integerArray.forEach((item, index) => {
+      let strArr = []
+      item.forEach((child, childIndex) => {
+        let _num = Math.pow(10, childIndex)
+        let numStr = defaultParams.nums[child] || ''
+        let unitStr = defaultParams.units[_num] || ''
+        if (numStr == '' || numStr == defaultParams.nums[0]) {
+          unitStr = ''
+        }
+        strArr.unshift(numStr + unitStr)
+      })
+      let _num = Math.pow(10, index * 4)
+      let unitStr = defaultParams.units[_num] || ''
+      if (strArr[strArr.length - 1] == defaultParams.nums[0]) {
+        strArr[strArr.length - 1] = ''
+      }
+      let hasNum = strArr.some(item => item != '')
+      if (hasNum) {
+        strArr.push(unitStr)
+      }
+      resArr.unshift(...strArr)
+    })
+    let decimalResArr = []
+    decimalArr.forEach((item, index) => {
+      let _num = defaultParams.nums[item]
+      if (isMoney) {
+        let _n = 1 / Math.pow(10, index + 1)
+        let moneyUnitStr = defaultParams.moneyUnits[_n]
+        decimalResArr.push(_num + moneyUnitStr)
+      } else {
+        decimalResArr.push(_num)
+      }
+    })
     if (isMoney) {
-      let _n = 1 / Math.pow(10, index + 1)
-      let moneyUnitStr = defaultParams.moneyUnits[_n]
-      decimalResArr.push(_num + moneyUnitStr)
+      resArr.push(defaultParams.moneyUnits[1])
+      if (decimalArr.length == 0) {
+        resArr.push(defaultParams.decUnit['/'])
+      }
     } else {
-      decimalResArr.push(_num)
+      if (decimalArr.length > 0) {
+        decimalResArr.unshift(defaultParams.decUnit['.'])
+      }
     }
-  })
-  if (isMoney) {
-    resArr.push(defaultParams.moneyUnits[1])
-    if (decimalArr.length == 0) {
-      resArr.push(defaultParams.decUnit['/'])
-    }
-  } else {
-    if (decimalArr.length > 0) {
-      decimalResArr.unshift(defaultParams.decUnit['.'])
-    }
+    let integerStr = resArr.join('')
+    let decimalStr = decimalResArr.join('')
+    return integerStr + decimalStr
+  } catch (error) {
+    console.error("请检查传入的数字是否正确");
   }
-  let integerStr = resArr.join('')
-  let decimalStr = decimalResArr.join('')
-  return integerStr + decimalStr
 }
 
+/**
+ * @function: 中文转数字
+ * @param {*} num 中文数字
+ * @param {*} defaultParams 转换字符
+ * @param {*} isMoney 是否是金额
+ * @return {string} 
+ */
 function str2NumHandler(str, defaultParams, isMoney) {
   try {
     let myParams = {}
@@ -138,7 +156,7 @@ function str2NumHandler(str, defaultParams, isMoney) {
     }
     return parseFloat(resNum)
   } catch (error) {
-    throw('请检查传入的中文是否和设置的参数匹配')
+    throw ('请检查传入的中文是否和设置的参数匹配')
   }
 }
 
@@ -160,71 +178,67 @@ class Num2Str {
   constructor() { }
   setNums(nums) {
     if (typeof nums != "object" || Array.isArray(nums)) {
-      throw ("请传入对象形式的参数")
+      console.error("setNums:请传入对象形式的参数")
       return
     }
-    if (Object.keys(nums).length < 10) {
-      throw ("传入参数不完整")
-      return
-    }
+    let num = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     let check = Object.keys(nums).every(item => {
-      return Number(item).toString() != 'NaN' && Number(item) >= 0 && Number(item) < 10
+      return num.includes(parseFloat(item))
     })
     if (!check) {
-      throw ("传入参数不正确")
+      console.error("setNums:传入参数不正确")
       return
     }
-    this.defaultParams.nums = nums
+    this.defaultParams.nums = Object.assign(this.defaultParams.nums, nums)
   }
   setUnit(units) {
-    if (typeof units != "object" || Array.isArray(units)) {
-      throw ("请传入对象形式的参数")
-      return
+    try {
+      if (typeof units != "object" || Array.isArray(units)) {
+        console.error("setUnit:请传入对象形式的参数")
+        return
+      }
+      let num = [10, 100, 1000, 10000, 100000000, 1000000000000]
+      let check = Object.keys(units).every(item => {
+        return num.includes(parseFloat(item)) || num.includes(parseFloat(item))
+      })
+      if (!check) {
+        console.error("setUnit:传入参数不正确")
+        return
+      }
+      this.defaultParams.units = Object.assign(this.defaultParams.units, units)
+    } catch (error) {
+
     }
-    if (Object.keys(units).length < 6) {
-      throw ("传入参数不完整")
-      return
-    }
-    let unit = units['10'] || units['100'] || units['1000'] || units['10000'] || units['100000000'] || units['1000000000000']
-    if (!unit) {
-      throw ("传入参数不正确")
-      return
-    }
-    this.defaultParams.units = units
   }
   setDecUnit(decUnit) {
     if (typeof decUnit != "object" || Array.isArray(decUnit)) {
-      throw ("请传入对象形式的参数")
+      console.error("setDecUnit:请传入对象形式的参数")
       return
     }
-    if (Object.keys(decUnit).length < 2) {
-      throw ("传入参数不完整")
+    let num = ['.', '/']
+    let check = Object.keys(decUnit).every(item => {
+      return num.includes(item)
+    })
+    if (!check) {
+      console.error("setDecUnit:传入参数不正确")
       return
     }
-    let dec = decUnit['.'] || decUnit['/']
-    if (!dec) {
-      throw ("传入参数不正确")
-      return
-    }
-    this.defaultParams.decUnit = decUnit
+    this.defaultParams.decUnit = Object.assign(this.defaultParams.decUnit, decUnit)
   }
   setMoneyUnits(moneyUnits) {
     if (typeof moneyUnits != "object" || Array.isArray(moneyUnits)) {
-      throw ("请传入对象形式的参数")
+      console.error("setMoneyUnits:请传入对象形式的参数")
       return
     }
-    if (Object.keys(moneyUnits).length < 5) {
-      throw ("传入参数不完整")
-      return
-    }
+    let num = ['1', '0.1', '0.01', '0.001', '0.0001']
     let check = Object.keys(moneyUnits).every(item => {
-      return parseFloat(item).toString() != 'NaN' && parseFloat(item) > 0 && parseFloat(item) <= 1
+      return num.includes(item.toString()) || num.includes(item)
     })
     if (!check) {
-      throw ("传入参数不正确")
+      console.error("setMoneyUnits:传入参数不正确")
       return
     }
-    this.defaultParams.moneyUnits = moneyUnits
+    this.defaultParams.moneyUnits = Object.assign(this.defaultParams.moneyUnits, moneyUnits)
   }
   getDefaultParams() {
     return this.defaultParams
